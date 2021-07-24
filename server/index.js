@@ -1,8 +1,14 @@
 const express = require('express');
 const app = express();
+const requestIP = require('request-ip');
+const { lookup } = require('geoip-lite');
+
+
 
 app.use('/', (req, res) => {
-	res.send('Hello World!');
+	const clientIP = requestIP.getClientIp(req);
+
+	res.send(lookup(clientIP));
 });
 
 app.listen(3000, () => {
