@@ -4,6 +4,12 @@ const requestIP = require('request-ip');
 const { lookup } = require('geoip-lite');
 const puppeteer = require('puppeteer');
 const path = require('path');
+const fs = require('fs');
+const moment = require('moment');
+require('moment-timezone');
+
+moment().format(); 
+
 
 
 const dir = path.join(__dirname, 'images');
@@ -12,6 +18,28 @@ app.use('/images',express.static(dir));
 
 app.get('/', async (req, res) => {
 	const clientIP = requestIP.getClientIp(req);
+	let contentHtml = fs.readFileSync('design/index.html', 'utf-8');
+	// console.log(req.query);
+	const {time,date,timezone}=req.query
+	let offset;
+	if(timezone.includes('-')){
+		offset=`-${timezone.split('-')[1]}`
+	}
+	else if(timezone.includes(' ')){
+		offset=`+${timezone.split(' ')[1]}`
+	}
+	else{
+		offset=`+00`
+	}
+	const convertedTime=moment(`${date} ${time}${offset}`)
+		// { time: '10-12-00', date: '12-12-2021', timezone: 'UTC-0530' }
+	// { time: '10-12-00', date: '12-12-2021', timezone: 'UTC 0530' }
+	contentHtml = contentHtml.replace('DATEA', date);
+	contentHtml = contentHtml.replace('TIMEA', `${time} UTC${offset}`);
+	contentHtml = contentHtml.replace('DATEB', convertedTime.tz(lookup(clientIP).timezone).format('YYYY-MM-DD'));
+	contentHtml = contentHtml.replace('TIMEB', convertedTime.tz(lookup(clientIP).timezone).format('HH:mm'));
+	contentHtml = contentHtml.replace('TIMEZONE', lookup(clientIP).timezone);
+	fs.writeFileSync('design/sampleOut.html', contentHtml);
 	const browser = await puppeteer.launch({
 		args: ['--no-sandbox', '--disable-setuid-sandbox'],
 	});
@@ -21,10 +49,7 @@ app.get('/', async (req, res) => {
 		height: 506,
 		deviceScaleFactor: 1,
 	});
-	console.log(req.query);
-	// { time: '10-12-00', date: '12-12-2021', timezone: 'UTC-0530' }
-	// { time: '10-12-00', date: '12-12-2021', timezone: 'UTC 0530' }
-	await page.goto(`file:${path.join(__dirname, 'design/index.html')}`, { waitUntil: 'networkidle0' });
+	await page.goto(`file:${path.join(__dirname, 'design/sampleOut.html')}`, { waitUntil: 'networkidle0' });
 	await page.screenshot({ path: path.join(__dirname, `images/test.png`) });
 	await browser.close();
 	// res.sendFile(path.join(__dirname, `design/index.html`));
