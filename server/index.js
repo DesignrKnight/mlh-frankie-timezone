@@ -31,6 +31,9 @@ app.get('/', async(req,res) =>{
 		"+0800":"+0800",
 		"+0900":"+0900",
 	}
+	if(!(req.query.time && req.query.timezone)){
+		res.send("Missing parameters, time and/or timezone")
+	}
 	let contentHtml = fs.readFileSync('design/discord.html', 'utf-8');
 	const {time, timezone}=req.query
 	let offset;
@@ -68,6 +71,9 @@ app.get('/', async(req,res) =>{
 })
 
 app.get('/get', async (req, res) => {
+	if(!(req.query.date && req.query.time && req.query.timezone)){
+		res.send("Missing parameters, date, time and/or timezone")
+	}
 	const clientIP = requestIP.getClientIp(req);
 	let contentHtml = fs.readFileSync('design/index.html', 'utf-8');
 	// console.log(req.query);
